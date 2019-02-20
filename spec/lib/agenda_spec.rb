@@ -72,16 +72,220 @@ RSpec.describe Agenda do
     end
   end
 
-  describe "#opened?" do
+  describe "#booked?" do
+    let(:on_test_function) {my_agenda.booked? Time.zone.now}
+    context "appointment start in past" do
+      context "and finish in past" do
+        let(:appointment) {create :event, :appoitment, starts_at: 2.second.ago, ends_at: 1.second.ago}
 
-    context "with recurring event" do
+        it "return nil" do
+          expect(on_test_function).to be nil
+        end
+      end
+      context "and finish on time" do
+        let(:appointment) {create :event, :appoitment, starts_at: 1.second.ago, ends_at: Time.zone.now}
+
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid appointment" do
+          expect(on_test_function).to eq appointment
+        end
+      end
+      context "and finish in future" do
+        let(:appointment) {create :event, :appoitment, starts_at: 1.second.ago, ends_at: 1.second.since}
+
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid appointment" do
+          expect(on_test_function).to eq appointment
+        end
+      end
     end
 
-    context "with no recurring events" do
+    context "appointment start on time" do
+      context "and finish on time" do
+        let(:appointment) {create :event, :appoitment, starts_at: Time.zone.now, ends_at: Time.zone.now}
+
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid appointment" do
+          expect(on_test_function).to eq appointment
+        end
+      end
+      context "and finish in future" do
+        let(:appointment) {create :event, :appoitment, starts_at: Time.zone.now, ends_at: 1.second.since}
+
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid appointment" do
+          expect(on_test_function).to eq appointment
+        end
+      end
+    end
+
+    context "appointment start in futur" do
+
+      context TODO have 30 min spawn or not
+      let(:appointment) {create :event, :appoitment, starts_at: 1.second.since, ends_at: 2.second.since}
+
+      it "return an Event" do
+        expect(on_test_function).to be_an Event
+      end
+      it "return an valid appointment" do
+        expect(on_test_function).to eq appointment
+      end
+    end
+  end
+
+  describe "#opened?" do
+    let(:on_test_function)  {my_agenda.opened? Time.zone.now}
+
+    context "non-recurring opening" do
+      before :each do
+        opening
+      end
+
+      context "starting in the past" do
+        context "and not big enough spawn" do
+          let(:opening) {create :event, :opening, starts_at: 1.second.ago, ends_at: 29.minutes.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+        context "and big enough spawn" do
+          let(:opening) {create :event, :opening, starts_at: 1.second.ago,   ends_at: (30*60+1).seconds.since}
+
+          it "return an Event" do
+            expect(on_test_function).to be_an Event
+          end
+          it "return an valid opening" do
+            expect(on_test_function).to eq opening
+          end
+        end
+      end
+
+      context "starting on the spot" do
+        context "and not big enough spawn" do
+          let(:opening) {create :event, :opening, starts_at: Time.zone.now, ends_at: (30*60).seconds.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+        context "and big enough spawn" do
+          let(:opening) {create :event, :opening, starts_at: Time.zone.now, ends_at: (30*60+1).seconds.since}
+
+          it "return an Event" do
+            expect(on_test_function).to be_an Event
+          end
+          it "return an valid opening" do
+            expect(on_test_function).to eq opening
+          end
+        end
+      end
+
+      context "starting in the future" do
+        context "and not big enough spawn" do
+          let(:opening) {create :event, :opening, starts_at: 1.seconds.since, ends_at: (30*60).seconds.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+        context "and big enough spawn" do
+          let(:opening) {create :event, :opening, starts_at: 1.seconds.since, ends_at: (30*60+2).seconds.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+      end
+    end
+
+    context "recurring opening" do
+      before :each do
+        opening
+      end
+
+      context "starting in the past" do
+        context "and not big enough spawn" do
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.second.ago, ends_at: 29.minutes.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+        context "and big enough spawn" do
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.second.ago,   ends_at: (30*60+1).seconds.since}
+
+          it "return an Event" do
+            expect(on_test_function).to be_an Event
+          end
+          it "return an valid opening" do
+            expect(on_test_function).to eq opening
+          end
+        end
+      end
+
+      context "starting on the spot" do
+        context "and not big enough spawn" do
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: Time.zone.now, ends_at: (30*60-1).seconds.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+        context "and big enough spawn" do
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: Time.zone.now, ends_at: (30*60+1).seconds.since}
+
+          it "return an Event" do
+            expect(on_test_function).to be_an Event
+          end
+          it "return an valid opening" do
+            expect(on_test_function).to eq opening
+          end
+        end
+      end
+
+      context "starting in the future" do
+        context "and not big enough spawn" do
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.seconds.since, ends_at: (30*60).seconds.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+        context "and big enough spawn" do
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.seconds.since, ends_at: (30*60+2).seconds.since}
+
+          it "return nil" do
+            expect(on_test_function).to be nil
+          end
+        end
+      end
+    end
+
+    context "acceptance check" do
       let(:on_time_opening) {create :event, :opening, starts_at: 1.hour.ago,   ends_at: 1.hour.since}
       let(:past_opening)    {create :event, :opening, starts_at: 2.hour.ago,   ends_at: 1.hour.ago}
       let(:futur_opening)   {create :event, :opening, starts_at: 1.hour.since, ends_at: 2.hour.since}
-      let(:on_test_function)  {my_agenda.opened? Time.zone.now}
+      let(:same_day_recurring) do
+        create :event, :opening, weekly_recurring: true, starts_at: (7.days.ago - 1.hour), ends_at: (7.days.ago + 1.hour)
+      end
+      let(:other_day_recurring) do
+        create :event, :opening, weekly_recurring: true, starts_at: (2.days.ago - 1.hour), ends_at: (2.days.ago + 1.hour)
+      end
+      let(:recurring_same_day_out_of_time) do
+        create :event, :opening, weekly_recurring: true, starts_at: (7.days.ago + 1.hour), ends_at: (7.days.ago + 3.hour)
+      end
+      let(:recurring_other_day_out_of_time) do
+        create :event, :opening, weekly_recurring: true, starts_at: (4.days.ago + 1.hour), ends_at: (4.days.ago + 3.hour)
+      end
 
       context "when no openings exist" do
         it "return nil" do
@@ -93,6 +297,9 @@ RSpec.describe Agenda do
         before :each do
           past_opening
           futur_opening
+          other_day_recurring
+          recurring_same_day_out_of_time
+          recurring_other_day_out_of_time
         end
         it "return nil" do
           expect(on_test_function).to be nil
@@ -103,7 +310,10 @@ RSpec.describe Agenda do
         before :each do
           past_opening
           futur_opening
+          other_day_recurring
           on_time_opening
+          recurring_same_day_out_of_time
+          recurring_other_day_out_of_time
         end
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -112,7 +322,41 @@ RSpec.describe Agenda do
           expect(on_test_function).to eq on_time_opening
         end
       end
-    end
 
+      context "when a reccuring opening match the requested date" do
+        before :each do
+          past_opening
+          futur_opening
+          other_day_recurring
+          same_day_recurring
+          recurring_same_day_out_of_time
+          recurring_other_day_out_of_time
+        end
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid opening" do
+          expect(on_test_function).to eq same_day_recurring
+        end
+      end
+
+      context "when different opening match the requested date" do
+        before :each do
+          past_opening
+          futur_opening
+          other_day_recurring
+          on_time_opening
+          same_day_recurring
+          recurring_same_day_out_of_time
+          recurring_other_day_out_of_time
+        end
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid opening" do
+          expect([on_time_opening, same_day_recurring]).to include(on_test_function)
+        end
+      end
+    end
   end
 end

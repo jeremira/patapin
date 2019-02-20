@@ -8,12 +8,30 @@ class Agenda
   end
 
   #
+  # Ensure an appoitment is not already schedule at a specified datetime
+  #
+  def booked?(datetime)
+
+  end
+
+  #
   # Ensure an opening exist at a specified datetime
   #
   def opened?(datetime)
     #@openings.find { |opening| opening.day == date.day &&&&&&  opening.start_at..opening.end_at == date}
     @openings.find do |opening|
-      datetime.between? opening.starts_at, opening.ends_at
+      if opening.weekly_recurring
+        start_time = Time.zone.parse(opening.starts_at.strftime("%Hh%Mm%Ss"))
+        end_time = Time.zone.parse(opening.ends_at.strftime("%Hh%Mm%Ss"))
+        ref_time = Time.zone.parse(datetime.strftime("%Hh%Mm%Ss"))
+        # On same week day AND time included in range
+        (opening.starts_at.wday == datetime.wday) &&
+          (ref_time.between? start_time, end_time) &&
+            (30.minutes.since(ref_time).between?(start_time, end_time))
+      else
+        (datetime.between?(opening.starts_at, opening.ends_at)) &&
+          (30.minutes.since(datetime).between?(opening.starts_at, opening.ends_at))
+      end
     end
   end
 end
