@@ -7,6 +7,22 @@ class Agenda
     @slot_extent  = params[:slot_extent]   || 30*60
   end
 
+  def availabilities_for(date)
+    {
+      date: date,
+      slots: slots_between(date.beginingoftheday, date.end_of_the day).select(&:available)
+    }
+  end
+
+  #
+  # Find all start time slots in a date range
+  #
+  def slots_between(starts_at, ends_at)
+    (starts_at.to_i .. ends_at.to_i)
+      .step(30.minutes)
+      .map { |epoch| Time.at(epoch) }
+  end
+
   #
   # Ensure a time slot has an opening and no appointment
   #

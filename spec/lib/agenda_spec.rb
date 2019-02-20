@@ -72,6 +72,48 @@ RSpec.describe Agenda do
     end
   end
 
+  describe "#availabilities_for" do
+
+    todo HERE
+  end
+
+  describe "#slots_between" do
+    # creer array de start at everu 30min
+    let(:on_test_function) {my_agenda.slots_between starting, ending}
+
+    context "when time continium is preserved" do
+      let(:starting) {DateTime.parse("Wed, 13 Feb 2019 10:00:00 UTC +00:00")}
+      let(:ending) {DateTime.parse("Wed, 13 Feb 2019 11:30:00 UTC +00:00")}
+
+      it "return an Array" do
+        expect(on_test_function).to be_an Array
+      end
+      it "find all valid slot" do
+        expect(on_test_function.size).to eq 4
+      end
+      it "find goot slot start time" do
+        expect(on_test_function).to eq [
+          DateTime.parse("Wed, 13 Feb 2019 10:00:00 UTC +00:00"),
+          DateTime.parse("Wed, 13 Feb 2019 10:30:00 UTC +00:00"),
+          DateTime.parse("Wed, 13 Feb 2019 11:00:00 UTC +00:00"),
+          DateTime.parse("Wed, 13 Feb 2019 11:30:00 UTC +00:00")
+        ]
+      end
+    end
+
+    context "when time continium is fucked up" do
+      let(:starting) {DateTime.parse("11h30m00")}
+      let(:ending) {DateTime.parse("10h00m00")}
+
+      it "return an Array" do
+        expect(on_test_function).to be_an Array
+      end
+      it "return an empty array" do
+        expect(on_test_function).to eq []
+      end
+    end
+  end
+
   describe "#available?" do
     let(:on_test_function) {my_agenda.available? Time.zone.now}
 
