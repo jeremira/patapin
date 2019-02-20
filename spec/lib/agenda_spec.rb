@@ -72,28 +72,82 @@ RSpec.describe Agenda do
     end
   end
 
+  describe "#available?" do
+    let(:on_test_function) {my_agenda.available? Time.zone.now}
+
+    context "with some openings" do
+      before :each do
+        allow(my_agenda).to receive(:opened?).with(Time.zone.now) {true}
+      end
+      context "and no appointments" do
+        before :each do
+          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {false}
+        end
+
+        it "return true" do
+          expect(on_test_function).to be true
+        end
+      end
+      context "but some appointments" do
+        before :each do
+          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {true}
+        end
+
+        it "return false" do
+          expect(on_test_function).to be false
+        end
+      end
+    end
+    context "with no openings" do
+      before :each do
+        allow(my_agenda).to receive(:opened?).with(Time.zone.now) {false}
+      end
+      context "and no appointments" do
+        before :each do
+          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {false}
+        end
+
+        it "return false" do
+          expect(on_test_function).to be false
+        end
+      end
+      context "but some appointments" do
+        before :each do
+          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {true}
+        end
+
+        it "return false" do
+          expect(on_test_function).to be false
+        end
+      end
+    end
+  end
+
   describe "#booked?" do
     let(:on_test_function) {my_agenda.booked? Time.zone.now}
+
+    before :each do
+      appointment
+    end
+
     context "appointment start in past" do
       context "and finish in past" do
-        let(:appointment) {create :event, :appoitment, starts_at: 2.second.ago, ends_at: 1.second.ago}
+        let(:appointment) {create :event, :appointment, starts_at: 2.second.ago, ends_at: 1.second.ago}
 
         it "return nil" do
           expect(on_test_function).to be nil
         end
       end
       context "and finish on time" do
-        let(:appointment) {create :event, :appoitment, starts_at: 1.second.ago, ends_at: Time.zone.now}
+        let(:appointment) {create :event, :appointment, starts_at: 1.second.ago, ends_at: Time.zone.now}
 
-        it "return an Event" do
-          expect(on_test_function).to be_an Event
-        end
-        it "return an valid appointment" do
-          expect(on_test_function).to eq appointment
+        it "return nil" do
+          expect(on_test_function).to be nil
         end
       end
+
       context "and finish in future" do
-        let(:appointment) {create :event, :appoitment, starts_at: 1.second.ago, ends_at: 1.second.since}
+        let(:appointment) {create :event, :appointment, starts_at: 1.second.ago, ends_at: 1.second.since}
 
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -106,17 +160,14 @@ RSpec.describe Agenda do
 
     context "appointment start on time" do
       context "and finish on time" do
-        let(:appointment) {create :event, :appoitment, starts_at: Time.zone.now, ends_at: Time.zone.now}
+        let(:appointment) {create :event, :appointment, starts_at: Time.zone.now, ends_at: Time.zone.now}
 
-        it "return an Event" do
-          expect(on_test_function).to be_an Event
-        end
-        it "return an valid appointment" do
-          expect(on_test_function).to eq appointment
+        it "return nil" do
+          expect(on_test_function).to be nil
         end
       end
       context "and finish in future" do
-        let(:appointment) {create :event, :appoitment, starts_at: Time.zone.now, ends_at: 1.second.since}
+        let(:appointment) {create :event, :appointment, starts_at: Time.zone.now, ends_at: 1.second.since}
 
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -129,14 +180,34 @@ RSpec.describe Agenda do
 
     context "appointment start in futur" do
 
-      context TODO have 30 min spawn or not
-      let(:appointment) {create :event, :appoitment, starts_at: 1.second.since, ends_at: 2.second.since}
+      context "appointment start in more than 30min" do
+        let(:appointment) {create :event, :appointment, starts_at: (30*60+1).second.since, ends_at: 1.hour.since}
 
-      it "return an Event" do
-        expect(on_test_function).to be_an Event
+        it "return nil" do
+          expect(on_test_function).to be nil
+        end
       end
-      it "return an valid appointment" do
-        expect(on_test_function).to eq appointment
+
+      context "appointment start in 30min" do
+        let(:appointment) {create :event, :appointment, starts_at: (30*60).second.since, ends_at: 1.hour.since}
+
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid appointment" do
+          expect(on_test_function).to eq appointment
+        end
+      end
+
+      context "appointment start in less than 30min" do
+        let(:appointment) {create :event, :appointment, starts_at: (30*60-1).second.since, ends_at: 1.hour.since}
+
+        it "return an Event" do
+          expect(on_test_function).to be_an Event
+        end
+        it "return an valid appointment" do
+          expect(on_test_function).to eq appointment
+        end
       end
     end
   end
