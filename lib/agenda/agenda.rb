@@ -7,11 +7,32 @@ class Agenda
     @slot_extent  = params[:slot_extent]   || 30*60
   end
 
+#enforce slot extent
+
+  #
+  # List all slots available by date for a specified days spawn
+  #
+  def availabilities_from(date, days_spawn:)
+    Array.new(days_spawn.to_i) { |i| availabilities_for i.day.since }
+  end
+
+  #
+  # Format date and available slots in a hash format
+  #
   def availabilities_for(date)
     {
-      date: date,
-      slots: slots_between(date.beginingoftheday, date.end_of_the day).select(&:available)
+      date: date.strftime("%Y/%m/%d"),
+      slots: available_slots_for(date)
     }
+  end
+
+  #
+  # List properly formated available slots fot the day
+  #
+  def available_slots_for(date)
+     slots_between(date.beginning_of_day, date.end_of_day)
+      .select{ |time| available? time }
+      .map   { |time| time.strftime("%H:%M") }
   end
 
   #

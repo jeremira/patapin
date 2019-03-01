@@ -72,13 +72,155 @@ RSpec.describe Agenda do
     end
   end
 
-  describe "#availabilities_for" do
+  describe "#availabilities_from" do
+    let(:on_test_function) {my_agenda.availabilities_from Time.zone.now, days_spawn: spawn_delay}
+    let(:stubbed_answer) {{"correct" => "date-slot"}}
 
-    todo HERE
+    context "with invalid spawn" do
+      let(:spawn_delay) {nil}
+
+      it "return a list" do
+        expect(on_test_function).to be_an Array
+      end
+      it "return an empty list" do
+        expect(on_test_function).to eq []
+      end
+    end
+
+    context "with a nul spawn" do
+      let(:spawn_delay) {0}
+
+      it "return a list" do
+        expect(on_test_function).to be_an Array
+      end
+      it "return an empty list" do
+        expect(on_test_function).to eq []
+      end
+    end
+
+    context "with a 1 day spawn" do
+      let(:spawn_delay) {1}
+
+      before :each do
+        expect(my_agenda).to receive(:availabilities_for).once.with(Time.zone.now) {stubbed_answer}
+      end
+
+      it "return a list" do
+        expect(on_test_function).to be_an Array
+      end
+      it "return a correct size list" do
+        expect(on_test_function.size).to eq 1
+      end
+      it "return proper date element" do
+        expect(on_test_function.first).to eq({"correct" => "date-slot"})
+      end
+    end
+
+    context "with a 7 day spawn" do
+      let(:spawn_delay) {7}
+      before :each do
+        expect(my_agenda).to receive(:availabilities_for).once.with(Time.zone.now) {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(1.day.since)   {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(2.days.since)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(3.days.since)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(4.days.since)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(5.days.since)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(6.days.since)  {stubbed_answer}
+      end
+
+      it "return a list" do
+        expect(on_test_function).to be_an Array
+      end
+      it "return a correct size list" do
+        expect(on_test_function.size).to eq 7
+      end
+      it "return proper date element" do
+        on_test_function.each { |elmt| expect(elmt).to eq({"correct" => "date-slot"}) }
+      end
+    end
+  end
+
+  describe "#availabilities_for" do
+    let(:on_test_function) {my_agenda.availabilities_for Time.zone.now}
+
+    before :each do
+      expect(my_agenda).to receive(:available_slots_for).with(Time.zone.now) do
+        ["babar", "bobor", "bibir"]
+      end
+    end
+
+    it "return an hash" do
+      expect(on_test_function).to be_an Hash
+    end
+    it "has a date key" do
+      expect(on_test_function.has_key?(:date)).to be true
+    end
+    it "properly format date" do
+      expect(on_test_function[:date]).to eq Time.zone.now.strftime("%Y/%m/%d")
+    end
+    it "has a slots key" do
+      expect(on_test_function.has_key?(:slots)).to be true
+    end
+    it "include valid slots list" do
+      expect(on_test_function[:slots]).to eq ["babar", "bobor", "bibir"]
+    end
+  end
+
+  describe "#available_slots_for" do
+    let(:on_test_function) {my_agenda.available_slots_for my_date}
+    let(:my_date) {Time.zone.now}
+
+    context "with 0 availabilities" do
+      before :each do
+        allow(my_agenda).to receive(:available?) {false}
+      end
+      it "return an list" do
+        expect(on_test_function).to be_an Array
+      end
+      it "setup an empty slot list" do
+        expect(on_test_function).to eq []
+      end
+    end
+
+    context "with all slot available" do
+      before :each do
+        allow(my_agenda).to receive(:available?) {true}
+      end
+
+      it "setup a slot list" do
+        expect(on_test_function).to be_an Array
+      end
+      it "find all free slots" do
+        expect(on_test_function.size).to eq 48
+      end
+      it "format correct slot" do
+        expected_slot = (Time.zone.now.beginning_of_day.to_i .. Time.zone.now.end_of_day.to_i)
+                            .step(30.minutes).map { |epoch| Time.at(epoch).strftime("%H:%M") }
+        expect(on_test_function).to eq expected_slot
+      end
+    end
+
+    context "with some slots available" do
+      before :each do
+        allow(my_agenda).to receive(:available?) {false}
+        allow(my_agenda).to receive(:available?).with(Time.zone.parse("2019-03-01 01:00:00 +0100")) {true}
+        allow(my_agenda).to receive(:available?).with(Time.zone.parse("2019-03-01 14:00:00 +0100")) {true}
+        allow(my_agenda).to receive(:available?).with(Time.zone.parse("2019-03-01 11:30:00 +0100")) {true}
+      end
+
+      it "setup a slot list" do
+        expect(on_test_function).to be_an Array
+      end
+      it "find all free slots" do
+        expect(on_test_function.size).to eq 3
+      end
+      it "format correct slot" do
+        expect(on_test_function).to eq ["01:00", "11:30", "14:00"]
+      end
+    end
   end
 
   describe "#slots_between" do
-    # creer array de start at everu 30min
     let(:on_test_function) {my_agenda.slots_between starting, ending}
 
     context "when time continium is preserved" do
