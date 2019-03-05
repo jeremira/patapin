@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Agenda do
   let(:my_agenda) { Agenda.new(agenda_params) }
+  let(:tested_date) {DateTime.parse("2014-08-10")}
   let(:agenda_params) do
     {
       openings: Event.openings,
@@ -73,7 +74,7 @@ RSpec.describe Agenda do
   end
 
   describe "#availabilities_from" do
-    let(:on_test_function) {my_agenda.availabilities_from Time.zone.now, days_spawn: spawn_delay}
+    let(:on_test_function) {my_agenda.availabilities_from tested_date, days_spawn: spawn_delay}
     let(:stubbed_answer) {{"correct" => "date-slot"}}
 
     context "with invalid spawn" do
@@ -102,7 +103,7 @@ RSpec.describe Agenda do
       let(:spawn_delay) {1}
 
       before :each do
-        expect(my_agenda).to receive(:availabilities_for).once.with(Time.zone.now) {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date) {stubbed_answer}
       end
 
       it "return a list" do
@@ -119,13 +120,13 @@ RSpec.describe Agenda do
     context "with a 7 day spawn" do
       let(:spawn_delay) {7}
       before :each do
-        expect(my_agenda).to receive(:availabilities_for).once.with(Time.zone.now) {stubbed_answer}
-        expect(my_agenda).to receive(:availabilities_for).once.with(1.day.since)   {stubbed_answer}
-        expect(my_agenda).to receive(:availabilities_for).once.with(2.days.since)  {stubbed_answer}
-        expect(my_agenda).to receive(:availabilities_for).once.with(3.days.since)  {stubbed_answer}
-        expect(my_agenda).to receive(:availabilities_for).once.with(4.days.since)  {stubbed_answer}
-        expect(my_agenda).to receive(:availabilities_for).once.with(5.days.since)  {stubbed_answer}
-        expect(my_agenda).to receive(:availabilities_for).once.with(6.days.since)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date) {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date + 1.day)   {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date + 2.days)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date + 3.days)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date + 4.days)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date + 5.days)  {stubbed_answer}
+        expect(my_agenda).to receive(:availabilities_for).once.with(tested_date + 6.days)  {stubbed_answer}
       end
 
       it "return a list" do
@@ -141,10 +142,10 @@ RSpec.describe Agenda do
   end
 
   describe "#availabilities_for" do
-    let(:on_test_function) {my_agenda.availabilities_for Time.zone.now}
+    let(:on_test_function) {my_agenda.availabilities_for tested_date}
 
     before :each do
-      expect(my_agenda).to receive(:available_slots_for).with(Time.zone.now) do
+      expect(my_agenda).to receive(:available_slots_for).with(tested_date) do
         ["babar", "bobor", "bibir"]
       end
     end
@@ -156,7 +157,7 @@ RSpec.describe Agenda do
       expect(on_test_function.has_key?(:date)).to be true
     end
     it "properly format date" do
-      expect(on_test_function[:date]).to eq Time.zone.now.strftime("%Y/%m/%d")
+      expect(on_test_function[:date]).to eq tested_date.strftime("%Y/%m/%d")
     end
     it "has a slots key" do
       expect(on_test_function.has_key?(:slots)).to be true
@@ -167,8 +168,7 @@ RSpec.describe Agenda do
   end
 
   describe "#available_slots_for" do
-    let(:on_test_function) {my_agenda.available_slots_for my_date}
-    let(:my_date) {Time.zone.now}
+    let(:on_test_function) {my_agenda.available_slots_for tested_date}
 
     context "with 0 availabilities" do
       before :each do
@@ -194,8 +194,8 @@ RSpec.describe Agenda do
         expect(on_test_function.size).to eq 48
       end
       it "format correct slot" do
-        expected_slot = (Time.zone.now.beginning_of_day.to_i .. Time.zone.now.end_of_day.to_i)
-                            .step(30.minutes).map { |epoch| Time.at(epoch).strftime("%H:%M") }
+        expected_slot = (tested_date.beginning_of_day.to_i .. tested_date.end_of_day.to_i)
+                            .step(30.minutes).map { |epoch| Time.at(epoch).utc.strftime("%H:%M") }
         expect(on_test_function).to eq expected_slot
       end
     end
@@ -203,9 +203,9 @@ RSpec.describe Agenda do
     context "with some slots available" do
       before :each do
         allow(my_agenda).to receive(:available?) {false}
-        allow(my_agenda).to receive(:available?).with(Time.zone.parse("2019-03-01 01:00:00 +0100")) {true}
-        allow(my_agenda).to receive(:available?).with(Time.zone.parse("2019-03-01 14:00:00 +0100")) {true}
-        allow(my_agenda).to receive(:available?).with(Time.zone.parse("2019-03-01 11:30:00 +0100")) {true}
+        expect(my_agenda).to receive(:available?).with(Time.parse("2014-08-10 08:00:00 UTC")) {true}
+        expect(my_agenda).to receive(:available?).with(Time.parse("2014-08-10 14:00:00 UTC")) {true}
+        expect(my_agenda).to receive(:available?).with(Time.parse("2014-08-10 11:30:00 UTC")) {true}
       end
 
       it "setup a slot list" do
@@ -215,7 +215,7 @@ RSpec.describe Agenda do
         expect(on_test_function.size).to eq 3
       end
       it "format correct slot" do
-        expect(on_test_function).to eq ["01:00", "11:30", "14:00"]
+        expect(on_test_function).to eq ["08:00", "11:30", "14:00"]
       end
     end
   end
@@ -257,7 +257,7 @@ RSpec.describe Agenda do
   end
 
   describe "#available?" do
-    let(:on_test_function) {my_agenda.available? Time.zone.now}
+    let(:on_test_function) {my_agenda.available? tested_date}
 
     context "with some openings" do
       before :each do

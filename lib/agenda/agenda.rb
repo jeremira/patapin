@@ -13,7 +13,9 @@ class Agenda
   # List all slots available by date for a specified days spawn
   #
   def availabilities_from(date, days_spawn:)
-    Array.new(days_spawn.to_i) { |i| availabilities_for i.day.since }
+    start_date = date.beginning_of_day.to_date
+    end_date = (date.beginning_of_day + days_spawn.to_i.days).to_date
+    (start_date...end_date).to_a.map { |date| availabilities_for date}
   end
 
   #
@@ -41,7 +43,7 @@ class Agenda
   def slots_between(starts_at, ends_at)
     (starts_at.to_i .. ends_at.to_i)
       .step(30.minutes)
-      .map { |epoch| Time.at(epoch) }
+      .map { |epoch| Time.at(epoch).utc }
   end
 
   #
