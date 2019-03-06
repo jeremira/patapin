@@ -23,7 +23,7 @@ class Agenda
   #
   def availabilities_for(date)
     {
-      date: date.strftime("%Y/%m/%d"),
+      date: date.to_date,
       slots: available_slots_for(date)
     }
   end
@@ -34,7 +34,7 @@ class Agenda
   def available_slots_for(date)
      slots_between(date.beginning_of_day, date.end_of_day)
       .select{ |time| available? time }
-      .map   { |time| time.strftime("%H:%M") }
+      .map   { |time| time.strftime("%-k:%M") }
   end
 
   #
@@ -50,35 +50,39 @@ class Agenda
   # Ensure a time slot has an opening and no appointment
   #
   def available?(datetime)
-    opened?(datetime) && !booked?(datetime)
+    !booked?(datetime) && opened?(datetime)
   end
 
   #
   # Ensure an appoitment is not already schedule at a specified datetime
   #
-  def booked?(datetime)
+  def booked?(time)
     @appointments.find do |appointment|
-      (datetime.between? appointment.starts_at, appointment.ends_at) ||
-        (30.minutes.since(datetime).between? appointment.starts_at, appointment.ends_at)
+      (appointment.starts_at .. appointment.ends_at).cover?(time) ||
+        (appointment.starts_at .. appointment.ends_at).cover?(30.minutes.since(time))
     end
   end
 
   #
   # Ensure an opening exist at a specified datetime
   #
-  def opened?(datetime)
+  def opened?(time)
     @openings.find do |opening|
       if opening.weekly_recurring
-        start_time = Time.zone.parse(opening.starts_at.strftime("%Hh%Mm%Ss"))
-        end_time = Time.zone.parse(opening.ends_at.strftime("%Hh%Mm%Ss"))
-        ref_time = Time.zone.parse(datetime.strftime("%Hh%Mm%Ss"))
+        start_time = opening.starts_at.to_time.utc.strftime( "%H%M%S%N" )
+        end_time = opening.ends_at.to_time.utc.strftime( "%H%M%S%N" )
+        slot_start = time.utc.strftime("%H%M%S%N")
+        slot_end = 30.minutes.since(time).utc.strftime("%H%M%S%N")
         # On same week day AND time included in range
-        (opening.starts_at.wday == datetime.wday) &&
-          (ref_time.between? start_time, end_time) &&
-            (30.minutes.since(ref_time).between?(start_time, end_time))
+        (opening.starts_at.wday == time.wday) &&
+          (start_time .. end_time).cover?(slot_start) &&
+            (start_time .. end_time).cover?(slot_end)
+
+      #     (ref_time.between? start_time, end_time) &&
+      #       (30.minutes.since(ref_time).between?(start_time, end_time))
       else
-        (datetime.between?(opening.starts_at, opening.ends_at)) &&
-          (30.minutes.since(datetime).between?(opening.starts_at, opening.ends_at))
+        (time.between?(opening.starts_at, opening.ends_at)) &&
+          (30.minutes.since(time).between?(opening.starts_at, opening.ends_at))
       end
     end
   end

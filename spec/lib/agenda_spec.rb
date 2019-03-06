@@ -157,7 +157,7 @@ RSpec.describe Agenda do
       expect(on_test_function.has_key?(:date)).to be true
     end
     it "properly format date" do
-      expect(on_test_function[:date]).to eq tested_date.strftime("%Y/%m/%d")
+      expect(on_test_function[:date]).to eq tested_date.to_date
     end
     it "has a slots key" do
       expect(on_test_function.has_key?(:slots)).to be true
@@ -195,7 +195,7 @@ RSpec.describe Agenda do
       end
       it "format correct slot" do
         expected_slot = (tested_date.beginning_of_day.to_i .. tested_date.end_of_day.to_i)
-                            .step(30.minutes).map { |epoch| Time.at(epoch).utc.strftime("%H:%M") }
+                            .step(30.minutes).map { |epoch| Time.at(epoch).utc.strftime("%-k:%M") }
         expect(on_test_function).to eq expected_slot
       end
     end
@@ -215,7 +215,7 @@ RSpec.describe Agenda do
         expect(on_test_function.size).to eq 3
       end
       it "format correct slot" do
-        expect(on_test_function).to eq ["08:00", "11:30", "14:00"]
+        expect(on_test_function).to eq ["8:00", "11:30", "14:00"]
       end
     end
   end
@@ -261,11 +261,11 @@ RSpec.describe Agenda do
 
     context "with some openings" do
       before :each do
-        allow(my_agenda).to receive(:opened?).with(Time.zone.now) {true}
+        allow(my_agenda).to receive(:opened?).with(tested_date) {true}
       end
       context "and no appointments" do
         before :each do
-          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {false}
+          allow(my_agenda).to receive(:booked?).with(tested_date) {false}
         end
 
         it "return true" do
@@ -274,7 +274,7 @@ RSpec.describe Agenda do
       end
       context "but some appointments" do
         before :each do
-          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {true}
+          allow(my_agenda).to receive(:booked?).with(tested_date) {true}
         end
 
         it "return false" do
@@ -284,11 +284,11 @@ RSpec.describe Agenda do
     end
     context "with no openings" do
       before :each do
-        allow(my_agenda).to receive(:opened?).with(Time.zone.now) {false}
+        allow(my_agenda).to receive(:opened?).with(tested_date) {false}
       end
       context "and no appointments" do
         before :each do
-          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {false}
+          allow(my_agenda).to receive(:booked?).with(tested_date) {false}
         end
 
         it "return false" do
@@ -297,7 +297,7 @@ RSpec.describe Agenda do
       end
       context "but some appointments" do
         before :each do
-          allow(my_agenda).to receive(:booked?).with(Time.zone.now) {true}
+          allow(my_agenda).to receive(:booked?).with(tested_date) {true}
         end
 
         it "return false" do
@@ -316,14 +316,14 @@ RSpec.describe Agenda do
 
     context "appointment start in past" do
       context "and finish in past" do
-        let(:appointment) {create :event, :appointment, starts_at: 2.second.ago, ends_at: 1.second.ago}
+        let(:appointment) {create :event, :appointment, starts_at: 30.minutes.ago.to_datetime, ends_at: 1.second.ago.to_datetime}
 
         it "return nil" do
           expect(on_test_function).to be nil
         end
       end
       context "and finish on time" do
-        let(:appointment) {create :event, :appointment, starts_at: 1.second.ago, ends_at: Time.zone.now}
+        let(:appointment) {create :event, :appointment, starts_at: 30.minutes.ago.to_datetime, ends_at: Time.zone.now.to_datetime}
 
         it "return nil" do
           expect(on_test_function).to be nil
@@ -331,7 +331,7 @@ RSpec.describe Agenda do
       end
 
       context "and finish in future" do
-        let(:appointment) {create :event, :appointment, starts_at: 1.second.ago, ends_at: 1.second.since}
+        let(:appointment) {create :event, :appointment, starts_at: 30.minutes.ago.to_datetime, ends_at: 1.second.since.to_datetime}
 
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -344,14 +344,14 @@ RSpec.describe Agenda do
 
     context "appointment start on time" do
       context "and finish on time" do
-        let(:appointment) {create :event, :appointment, starts_at: Time.zone.now, ends_at: Time.zone.now}
+        let(:appointment) {create :event, :appointment, starts_at: Time.zone.now.to_datetime, ends_at: Time.zone.now.to_datetime}
 
         it "return nil" do
           expect(on_test_function).to be nil
         end
       end
       context "and finish in future" do
-        let(:appointment) {create :event, :appointment, starts_at: Time.zone.now, ends_at: 1.second.since}
+        let(:appointment) {create :event, :appointment, starts_at: Time.zone.now.to_datetime, ends_at: 30.minutes.since.to_datetime}
 
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -365,7 +365,7 @@ RSpec.describe Agenda do
     context "appointment start in futur" do
 
       context "appointment start in more than 30min" do
-        let(:appointment) {create :event, :appointment, starts_at: (30*60+1).second.since, ends_at: 1.hour.since}
+        let(:appointment) {create :event, :appointment, starts_at: (30*60+1).second.since.to_datetime, ends_at: 1.hour.since.to_datetime}
 
         it "return nil" do
           expect(on_test_function).to be nil
@@ -373,7 +373,7 @@ RSpec.describe Agenda do
       end
 
       context "appointment start in 30min" do
-        let(:appointment) {create :event, :appointment, starts_at: (30*60).second.since, ends_at: 1.hour.since}
+        let(:appointment) {create :event, :appointment, starts_at: (30*60).second.since.to_datetime, ends_at: 1.hour.since.to_datetime}
 
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -384,7 +384,7 @@ RSpec.describe Agenda do
       end
 
       context "appointment start in less than 30min" do
-        let(:appointment) {create :event, :appointment, starts_at: (30*60-1).second.since, ends_at: 1.hour.since}
+        let(:appointment) {create :event, :appointment, starts_at: (30*60-1).second.since.to_datetime, ends_at: 1.hour.since.to_datetime}
 
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -406,14 +406,14 @@ RSpec.describe Agenda do
 
       context "starting in the past" do
         context "and not big enough spawn" do
-          let(:opening) {create :event, :opening, starts_at: 1.second.ago, ends_at: 29.minutes.since}
+          let(:opening) {create :event, :opening, starts_at: 1.second.ago.to_datetime, ends_at: 29.minutes.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
           end
         end
         context "and big enough spawn" do
-          let(:opening) {create :event, :opening, starts_at: 1.second.ago,   ends_at: (30*60+1).seconds.since}
+          let(:opening) {create :event, :opening, starts_at: 1.second.ago.to_datetime, ends_at: (30*60+1).seconds.since.to_datetime}
 
           it "return an Event" do
             expect(on_test_function).to be_an Event
@@ -426,14 +426,14 @@ RSpec.describe Agenda do
 
       context "starting on the spot" do
         context "and not big enough spawn" do
-          let(:opening) {create :event, :opening, starts_at: Time.zone.now, ends_at: (30*60).seconds.since}
+          let(:opening) {create :event, :opening, starts_at: Time.zone.now.to_datetime, ends_at: (30*60).seconds.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
           end
         end
         context "and big enough spawn" do
-          let(:opening) {create :event, :opening, starts_at: Time.zone.now, ends_at: (30*60+1).seconds.since}
+          let(:opening) {create :event, :opening, starts_at: Time.zone.now.to_datetime, ends_at: (30*60+1).seconds.since.to_datetime}
 
           it "return an Event" do
             expect(on_test_function).to be_an Event
@@ -446,14 +446,14 @@ RSpec.describe Agenda do
 
       context "starting in the future" do
         context "and not big enough spawn" do
-          let(:opening) {create :event, :opening, starts_at: 1.seconds.since, ends_at: (30*60).seconds.since}
+          let(:opening) {create :event, :opening, starts_at: 1.seconds.since.to_datetime, ends_at: (30*60).seconds.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
           end
         end
         context "and big enough spawn" do
-          let(:opening) {create :event, :opening, starts_at: 1.seconds.since, ends_at: (30*60+2).seconds.since}
+          let(:opening) {create :event, :opening, starts_at: 1.seconds.since.to_datetime, ends_at: (30*60+2).seconds.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
@@ -469,14 +469,14 @@ RSpec.describe Agenda do
 
       context "starting in the past" do
         context "and not big enough spawn" do
-          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.second.ago, ends_at: 29.minutes.since}
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.second.ago.to_datetime, ends_at: 29.minutes.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
           end
         end
         context "and big enough spawn" do
-          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.second.ago,   ends_at: (30*60+1).seconds.since}
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.second.ago.to_datetime, ends_at: (30*60+1).seconds.since.to_datetime}
 
           it "return an Event" do
             expect(on_test_function).to be_an Event
@@ -489,14 +489,14 @@ RSpec.describe Agenda do
 
       context "starting on the spot" do
         context "and not big enough spawn" do
-          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: Time.zone.now, ends_at: (30*60-1).seconds.since}
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: Time.zone.now.to_datetime, ends_at: (30*60-1).seconds.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
           end
         end
         context "and big enough spawn" do
-          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: Time.zone.now, ends_at: (30*60+1).seconds.since}
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: Time.zone.now.to_datetime, ends_at: (30*60+1).seconds.since.to_datetime}
 
           it "return an Event" do
             expect(on_test_function).to be_an Event
@@ -509,14 +509,14 @@ RSpec.describe Agenda do
 
       context "starting in the future" do
         context "and not big enough spawn" do
-          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.seconds.since, ends_at: (30*60).seconds.since}
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.seconds.since.to_datetime, ends_at: (30*60).seconds.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
           end
         end
         context "and big enough spawn" do
-          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.seconds.since, ends_at: (30*60+2).seconds.since}
+          let(:opening) {create :event, :opening, weekly_recurring: true, starts_at: 1.seconds.since.to_datetime, ends_at: (30*60+2).seconds.since.to_datetime}
 
           it "return nil" do
             expect(on_test_function).to be nil
@@ -526,20 +526,20 @@ RSpec.describe Agenda do
     end
 
     context "acceptance check" do
-      let(:on_time_opening) {create :event, :opening, starts_at: 1.hour.ago,   ends_at: 1.hour.since}
-      let(:past_opening)    {create :event, :opening, starts_at: 2.hour.ago,   ends_at: 1.hour.ago}
-      let(:futur_opening)   {create :event, :opening, starts_at: 1.hour.since, ends_at: 2.hour.since}
+      let(:on_time_opening) {create :event, :opening, starts_at: 1.hour.ago.to_datetime, ends_at: 1.hour.since.to_datetime}
+      let(:past_opening)    {create :event, :opening, starts_at: 2.hour.ago.to_datetime, ends_at: 1.hour.ago.to_datetime}
+      let(:futur_opening)   {create :event, :opening, starts_at: 1.hour.since.to_datetime, ends_at: 2.hour.since.to_datetime}
       let(:same_day_recurring) do
-        create :event, :opening, weekly_recurring: true, starts_at: (7.days.ago - 1.hour), ends_at: (7.days.ago + 1.hour)
+        create :event, :opening, weekly_recurring: true, starts_at: (7.days.ago - 1.hour).to_datetime, ends_at: (7.days.ago + 1.hour).to_datetime
       end
       let(:other_day_recurring) do
-        create :event, :opening, weekly_recurring: true, starts_at: (2.days.ago - 1.hour), ends_at: (2.days.ago + 1.hour)
+        create :event, :opening, weekly_recurring: true, starts_at: (2.days.ago - 1.hour).to_datetime, ends_at: (2.days.ago + 1.hour).to_datetime
       end
       let(:recurring_same_day_out_of_time) do
-        create :event, :opening, weekly_recurring: true, starts_at: (7.days.ago + 1.hour), ends_at: (7.days.ago + 3.hour)
+        create :event, :opening, weekly_recurring: true, starts_at: (7.days.ago + 1.hour).to_datetime, ends_at: (7.days.ago + 3.hour).to_datetime
       end
       let(:recurring_other_day_out_of_time) do
-        create :event, :opening, weekly_recurring: true, starts_at: (4.days.ago + 1.hour), ends_at: (4.days.ago + 3.hour)
+        create :event, :opening, weekly_recurring: true, starts_at: (4.days.ago + 1.hour).to_datetime, ends_at: (4.days.ago + 3.hour).to_datetime
       end
 
       context "when no openings exist" do

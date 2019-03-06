@@ -69,4 +69,25 @@ RSpec.describe Event, type: :model do
       end
     end
   end
+
+  describe ".availabilities" do
+    let(:tested_date) { DateTime.parse("2014-08-10") }
+    let(:agenda_params) do
+      {
+        openings: Event.openings,
+        appointments: Event.appointments
+      }
+    end
+    let(:on_test_function) {Event.availabilities(tested_date)}
+
+    before :each do
+      expect(Agenda).to receive(:new).with(agenda_params) do
+        instance_double("Agenda", availabilities_from: [{"available"=>"ok"}])
+      end
+    end
+
+    it "return Agenda availabilities" do
+      expect(on_test_function).to eq [{"available"=>"ok"}]
+    end
+  end
 end
