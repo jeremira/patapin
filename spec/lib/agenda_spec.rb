@@ -331,7 +331,7 @@ RSpec.describe Agenda do
       end
 
       context "and finish in future" do
-        let(:appointment) {create :event, :appointment, starts_at: 30.minutes.ago.to_datetime, ends_at: 1.second.since.to_datetime}
+        let(:appointment) {create :event, :appointment, starts_at: 30.minutes.ago.to_datetime, ends_at: 10.minutes.since.to_datetime}
 
         it "return an Event" do
           expect(on_test_function).to be_an Event
@@ -375,11 +375,8 @@ RSpec.describe Agenda do
       context "appointment start in 30min" do
         let(:appointment) {create :event, :appointment, starts_at: (30*60).second.since.to_datetime, ends_at: 1.hour.since.to_datetime}
 
-        it "return an Event" do
-          expect(on_test_function).to be_an Event
-        end
-        it "return an valid appointment" do
-          expect(on_test_function).to eq appointment
+        it "return nil" do
+          expect(on_test_function).to be nil
         end
       end
 

@@ -7,8 +7,6 @@ class Agenda
     @slot_extent  = params[:slot_extent]   || 30*60
   end
 
-#enforce slot extent
-
   #
   # List all slots available by date for a specified days spawn
   #
@@ -58,8 +56,8 @@ class Agenda
   #
   def booked?(time)
     @appointments.find do |appointment|
-      (appointment.starts_at .. appointment.ends_at).cover?(time) ||
-        (appointment.starts_at .. appointment.ends_at).cover?(30.minutes.since(time))
+      (appointment.starts_at ... appointment.ends_at).cover?(time) ||
+        ((appointment.starts_at + 1) ... appointment.ends_at).cover?(30.minutes.since(time))
     end
   end
 
